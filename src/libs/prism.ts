@@ -12,7 +12,7 @@ class PRISM {
     host: string;
     username: string;
     password: string;
-    
+
     client: Socket;
     event: EventBus;
     
@@ -51,7 +51,7 @@ class PRISM {
     }
 
     after() {
-        let self = this;
+        const self = this;
         this.client.on('end', () => {
             self.event.emit('log', 'Disconnected from PRISM Server');
             self.status = false;
@@ -76,7 +76,7 @@ class PRISM {
     }
 
     reconnect() {
-        let self = this;
+        const self = this;
         this.client.removeAllListeners();
         
         // Call connect
@@ -118,7 +118,7 @@ class PRISM {
 
         const msg = data.split(DELIMITER, 1);
 
-        if(data.includes(DELIMITER) && (msg[1] == undefined || msg[1] == null) ) {
+        if(data.includes(DELIMITER) && (msg[1] === undefined || msg[1] == null) ) {
             this.parse_command(msg[0]);
         } else if(!data.includes(DELIMITER)) {
             this.set_inputBuffer(data);
@@ -301,7 +301,7 @@ class PRISM {
     }
 
     isGameManagementChat(message: Message) {
-        if(message.subject != 'chat') return false;
+        if(message.subject !== 'chat') return false;
         if(message.messages.length < 3) return false;
         if(message.messages[2].includes('Game') || message.messages[2].includes('Admin Alert') || message.messages[2].includes('Response')) return true;
         return false;
@@ -404,20 +404,20 @@ class PRISM {
             'rconUsers'         : msg[17],
         };
 
-        details["serverStartupTime"] = formatDateTime(new Date(parseFloat(details["serverStartupTime"]) * 1000));
-        details["serverWarmup"] = parseFloat(details["serverWarmup"])/60 + " minutes"
-        details["serverRoundLength"] = parseFloat(details["serverRoundLength"])/60 + " minutes"
-        details['layer'] = LAYERS[ details['layer'] as keyof Layers];
-        details["timeStarted"] = formatDateTime(new Date(parseFloat(details['timeStarted']) * 1000))
+        details.serverStartupTime = formatDateTime(new Date(parseFloat(details.serverStartupTime) * 1000));
+        details.serverWarmup = parseFloat(details.serverWarmup)/60 + " minutes"
+        details.serverRoundLength = parseFloat(details.serverRoundLength)/60 + " minutes"
+        details.layer = LAYERS[ details['layer'] as keyof Layers]; // tslint:disable-line
+        details.timeStarted = formatDateTime(new Date(parseFloat(details.timeStarted) * 1000))
 
-        if(parseInt(details['status']) != 0){
-            details['status'] = "LOADING SCREEN";
-            details["mode"] = '';
-            details["layer"] = ''
-            details["team1"] = '';
-            details["team2"] = '';
+        if(parseInt(details.status, 2) !== 0){
+            details.status = "LOADING SCREEN";
+            details.mode = '';
+            details.layer = ''
+            details.team1 = '';
+            details.team2 = '';
         } else {
-            details['status'] = '';
+            details.status = '';
         }
 
         this.event.emit('serverdetails', details);

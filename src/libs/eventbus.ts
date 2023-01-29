@@ -65,9 +65,9 @@ class EventBus extends TypedEmitter<IEmissions> {
     
         // A helper function that will generate a handler that
         // removes itself when its called
-        const gen_cb = function(event_name: any) {
+        const generateCallback = function(eventName: any) {
             const cb = function() {
-                _this.removeListener(event_name, cb);
+                _this.removeListener(eventName, cb);
                 // This will allow any args you put in
                 // xxx.emit('event', ...) to be sent
                 // to your handler
@@ -77,7 +77,7 @@ class EventBus extends TypedEmitter<IEmissions> {
         };
     
         events.forEach(function(e:any) {
-            _this.addListener(e, gen_cb(e));
+            _this.addListener(e, generateCallback(e));
         });
     };
     
