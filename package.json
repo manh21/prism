@@ -1,6 +1,6 @@
 {
   "name": "@manh21/prism",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "PRISM Connection Library",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
