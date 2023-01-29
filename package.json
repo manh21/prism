@@ -22,7 +22,14 @@
     "type": "git",
     "url": "git+https://github.com/manh21/prism.git"
   },
-  "keywords": ["Project Reality", "PRISM", "Server Admin", "Server Management", "library", "nodejs"],
+  "keywords": [
+    "Project Reality",
+    "PRISM",
+    "Server Admin",
+    "Server Management",
+    "library",
+    "nodejs"
+  ],
   "author": "Muh Aqila Naufal Hakim",
   "license": "ISC",
   "devDependencies": {
