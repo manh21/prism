@@ -33,6 +33,7 @@
   "author": "Muh Aqila Naufal Hakim",
   "license": "ISC",
   "devDependencies": {
+    "@types/node": "^18.11.18",
     "prettier": "^2.8.3",
     "tslint": "^6.1.3",
     "tslint-config-prettier": "^1.18.0",
