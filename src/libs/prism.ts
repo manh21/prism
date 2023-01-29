@@ -1,14 +1,20 @@
 import { Socket } from "net";
-import EventBus from "./eventbus";
+import EventBus, { IEmissions } from "./eventbus";
 import Message from "./message";
+import { Layers } from "../types/layers";
+import { ServerDetail } from "../types/serverdetail";
+import { GameMap } from "../types/gamemap";
 import { createHash, csrpng, formatDateTime } from "./utils";
+import { LAYERS } from "../constant";
 
 class PRISM {
     port: number;
     host: string;
-    client: Socket;
     username: string;
     password: string;
+    
+    client: Socket;
+    event: EventBus;
     
     private inputBuffer: string;
     private outputBuffer: Buffer[];
@@ -17,7 +23,6 @@ class PRISM {
     private serverChallange: string;
     private salt: string;
     private authenticated: boolean;
-    private eventEmitter: EventBus;
     private status: boolean;
 
     constructor(port: number, host: string, username: string, password: string) {
@@ -38,7 +43,7 @@ class PRISM {
 
         // State
         this.authenticated = false;
-        this.eventEmitter = new EventBus();
+        this.event = new EventBus();
         this.status = false;
 
         this.connect();
@@ -48,25 +53,21 @@ class PRISM {
     after() {
         let self = this;
         this.client.on('end', () => {
-            self.emit_event('log', 'Disconnected from PRISM Server');
+            self.event.emit('log', 'Disconnected from PRISM Server');
             self.status = false;
-            console.log('Disconnected form PRISM Server');
         });
 
         this.client.on('data', function(data) {
-            //console.log("RECEIVED "+data.toString());
             self.messages(data.toString());
         });
 
         this.client.on('connect', () => {
             self.status = true;
-            self.emit_event('log', 'Connected to PRISM Server');
-            console.log('Connected to PRISM Server');
+            self.event.emit('log', 'Connected to PRISM Server');
         });
 
         this.client.on('error', (data) => {
-            self.emit_event('log', data);
-            console.error(data);
+            self.event.emit('log', data);
         });
     }
 
@@ -82,23 +83,21 @@ class PRISM {
         this.connect();
 
         this.client.on('error', err => {
-            console.error(err);
-            console.error(err);
+            self.event.emit('log', err);
         });
 
         this.client.once('connect', function() {
-            self.emit_event('log', 'Connectd to PRISM Server');
-            console.info('Connected to server!');
+            self.event.emit('log', 'Connectd to PRISM Server');
             self.after();
             self.login();
         });
-        console.log('Reconnecting to PRISM Server');
+        this.event.emit('log', 'Reconnecting to PRISM Server');
     }
 
     disconnect() {
         this.authenticated = false;
         this.client.end();
-        console.log('Disconnected form PRISM Server');
+        this.event.emit('log', 'Disconnected from PRISM Server');
     }
 
     /**
@@ -150,13 +149,10 @@ class PRISM {
                 break;
 
             case 'updateserverdetails':
-                // this._log(message);
                 break;
 
             case 'APIAdminResult':
-                this.emit_event(subject, message.messages);
-                //this._log(message);
-                //console.log(message.messages)
+                this.event.emit(subject, message);
                 break;
 
             case 'chat':
@@ -168,34 +164,53 @@ class PRISM {
                 break;
 
             case 'error':
-                this.emit_event('error', message);
+                this.event.emit('error', message);
                 this._log(message);
                 break;
 
             case 'errorcritical':
-                this._log(message);
                 break;
 
             case 'raconfig':
-                //this._log(message);
-                //console.log(message.messages)
                 break;
 
+            case 'gameplaydetails':
+                break;
+
+            case 'serverdetails':
+                break;
+
+            case 'listplayers':
+                // TODO: Handel multiple data chunks
+                this._listplayers(message);
+                break;
+
+            case 'updateplayers':
+                // TODO: Update player list
+                break;
+
+            case 'maplist':
+                this._maplist(message);
+                break;
+
+            case 'getusers':
+
+                break;
+
+            case 'playerleave':
+                // TODO: Remove player from list
+                break;
             default:
-                console.log('No parser found: ' + subject);
-                // this._log(message);
-                //console.log(message.messages)
+                this.event.emit('log', 'No parser found: ' + subject);
                 break;
         }
     }
 
     set_inputBuffer(data: string) {
-        console.log('Set Input Buffer');
         this.inputBuffer = data;
     }
 
     clear_inputBuffer() {
-        console.log('Clear Input Buffer');
         this.inputBuffer = "";
     }
 
@@ -206,13 +221,28 @@ class PRISM {
         while (this.outputBuffer.length > 0) {
             const data = this.outputBuffer.shift();
             if(!data) return;
-            // console.log(data.toString());
             client.write(data);
         }
     }
 
     get_server_details() {
         this.send_raw_command("serverdetailsalways");
+    }
+
+    get_gameplay_details() {
+        this.send_raw_command("gameplaydetails");
+    }
+
+    get_player_list() {
+        this.send_raw_command("listplayers");
+    }
+
+    get_map_list() {
+        this.send_raw_command("readmaplist");
+    }
+
+    get_ban_list() {
+        this.send_raw_command("readbanlist");
     }
 
     send_raw_command(subject: string, ...args: string[]) {
@@ -223,7 +253,7 @@ class PRISM {
 
     login(username = this.username, password = this.password) {
         if(this.authenticated) {
-            this.emit_event('log', 'already authenticated!');
+            this.event.emit('log', 'already authenticated!');
             return;
         }
 
@@ -238,14 +268,6 @@ class PRISM {
         const saltedHash = createHash(saltPass);
         const res = [username, clientChallange, serverChallange, saltedHash].join('\x03').toString();
         return createHash(res);
-    }
-
-    get event() {
-        return this.eventEmitter;
-    }
-
-    emit_event(subject: string, ...data: any[]) {
-        this.eventEmitter.emit(subject, ...data);
     }
 
     /**
@@ -269,11 +291,13 @@ class PRISM {
     _connected(message: Message) {
         this.authenticated = true;
         this._log(message);
-        this.emit_event('log', 'Authenticated as Skynet');
+        this.event.emit('log', 'Authenticated as Skynet');
+
+        this.get_map_list();
     }
 
     _log(message: Message) {
-        this.emit_event('log', message);
+        this.event.emit('log', message);
     }
 
     isGameManagementChat(message: Message) {
@@ -287,7 +311,6 @@ class PRISM {
         if(this.isGameManagementChat(message)) {
             message.messages = message.messages.slice(2);
 
-            //console.log(message);
             switch (message.messages[0]) {
                 case 'Game':
                     this._man_game(message);
@@ -305,22 +328,52 @@ class PRISM {
                     break;
 
                 default:
-                    //console.log(message);
                     break;
             }
         }
     }
 
     _man_game(message: Message) {
-        this.emit_event('game', message);
+        this.event.emit('game', message);
     }
 
     _man_adminalert(message: Message) {
-        this.emit_event('adminalert', message);
+        this.event.emit('adminalert', message);
     }
 
     _man_response(message: Message) {
-        this.emit_event('response', message);
+        this.event.emit('response', message);
+    }
+
+    _listplayers(message: Message) {
+        // TODO: parse player list
+    }
+
+    /**
+     * Parse maplist message
+     * @param {Message} message
+     */
+    _maplist(message: Message) {
+        const msg = message.messages;
+        const msgList = msg[2].split('\n');        
+
+        const maplist: GameMap[] = [];
+
+        for (const map of msgList) {
+            const maps = map.split(' ');
+            if(maps.length < 4) continue;
+
+            const mapObj: GameMap = {
+                'index': maps[0].slice(0, -1),
+                'name': maps[1].replace(/"/gm, ''),
+                'mode': maps[2],
+                'layer': LAYERS[ maps[3] as keyof Layers ],
+            }
+
+            maplist.push(mapObj);
+        }
+
+        this.event.emit('maplist', maplist);
     }
 
     /**
@@ -330,14 +383,7 @@ class PRISM {
     _serverdetails(message: Message) {
         const msg = message.messages;
 
-        const layers: Layers = {
-            '16': 'inf',
-            '32': 'alt',
-            '64': 'std',
-            '128': 'large',
-        };
-
-        const details: Details = {
+        const details: ServerDetail = {
             'servername'        : msg[0],
             'serverIP'          : msg[1],
             'serverPort'        : msg[2],
@@ -358,13 +404,13 @@ class PRISM {
             'rconUsers'         : msg[17],
         };
 
-        details["serverStartupTime"] = formatDateTime(new Date(details["serverStartupTime"]));
+        details["serverStartupTime"] = formatDateTime(new Date(parseFloat(details["serverStartupTime"]) * 1000));
         details["serverWarmup"] = parseFloat(details["serverWarmup"])/60 + " minutes"
         details["serverRoundLength"] = parseFloat(details["serverRoundLength"])/60 + " minutes"
-        details['layer'] = layers[ details['layer'] as keyof Layers];
-        details["timeStarted"] = formatDateTime(new Date(details['timeStarted']))
+        details['layer'] = LAYERS[ details['layer'] as keyof Layers];
+        details["timeStarted"] = formatDateTime(new Date(parseFloat(details['timeStarted']) * 1000))
 
-        if(details['status']){
+        if(parseInt(details['status']) != 0){
             details['status'] = "LOADING SCREEN";
             details["mode"] = '';
             details["layer"] = ''
@@ -374,34 +420,8 @@ class PRISM {
             details['status'] = '';
         }
 
-        this.emit_event('serverdetails', details);
+        this.event.emit('serverdetails', details);
     }
 }
 
-type Layers = {
-    '16': string;
-    '32': string;
-    '64': string;
-    '128': string;
-}
-
-interface Details {
-    'servername'        : string,
-    'serverIP'          : string,
-    'serverPort'        : string,
-    'serverStartupTime' : string,
-    'serverWarmup'      : string,
-    'serverRoundLength' : string,
-    'maxPlayers'        : string,
-    'status'            : string,
-    'map'               : string,
-    'mode'              : string,
-    'layer'             : string,
-    'timeStarted'       : string,
-    'players'           : string,
-    'team1'             : string,
-    'team2'             : string,
-    'tickets1'          : string,
-    'tickets2'          : string,
-    'rconUsers'         : string,
-}
+export default PRISM;

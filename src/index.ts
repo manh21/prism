@@ -1,1 +1,3 @@
-export const Greeter = (name: string) => `Hello ${name}`; 
+import PRISM from "./libs/prism";
+
+export default PRISM;

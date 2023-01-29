@@ -1,6 +1,29 @@
-import { EventEmitter } from 'events';
+import { TypedEmitter } from 'tiny-typed-emitter';
+import { GameMap } from '../types/gamemap';
+import { ServerDetail } from '../types/serverdetail';
+import Message from './message';
 
-class EventBus extends EventEmitter {
+export interface IEmissions {
+    // Utilities
+    'log': (message: any) => void;
+    'error': (message: any) => void;
+
+    // Chat
+    'game': (message: Message) => void;
+    'adminalert': (message: Message) => void;
+    'response': (message: Message) => void;
+
+    // Commands
+    'APIAdminResult': (message: Message) => void;
+    'maplist': (message: GameMap[]) => void;    
+    'serverdetails': (message: ServerDetail) => void;
+}  
+
+class EventBus extends TypedEmitter<IEmissions> {
+    constructor() {
+        super();
+    }
+
     onetime(events: any, handler: any) {
         if(! events) return;
     
@@ -9,9 +32,9 @@ class EventBus extends EventEmitter {
         if(!(events instanceof Array))
             events = [events];
     
-        var _this = this;
+        const _this = this;
     
-        var cb = function() {
+        const cb = function() {
             events.forEach(function(e: any) {
                 // This only removes the listener itself
                 // from all the events that are listening to it
@@ -38,12 +61,12 @@ class EventBus extends EventEmitter {
         if(!(events instanceof Array))
             events = [events];
     
-        var _this = this;
+        const _this = this;
     
         // A helper function that will generate a handler that
         // removes itself when its called
-        var gen_cb = function(event_name: any) {
-            var cb = function() {
+        const gen_cb = function(event_name: any) {
+            const cb = function() {
                 _this.removeListener(event_name, cb);
                 // This will allow any args you put in
                 // xxx.emit('event', ...) to be sent

@@ -16,24 +16,24 @@ class Message {
         let message = [];
 
         for (const msg of messages) {
-            if(msg === '' || word.includes(msg) || Math.abs(msg.length) >= 0) {
+            if(msg === '' || word.includes(msg) || Math.abs(parseFloat(msg)) >= 0) {
                 continue;
-            }
-            
-            if(msg.includes('\n')) {
+            } else {
+                if(msg.includes('\n')) {
 
-                for (const msg2 of msg.split('\n')) {
-                    if(Math.abs(msg2.length) >= 0) {
-                        continue;
+                    for (const msg2 of msg.split('\n')) {
+                        if(Math.abs(parseFloat(msg2)) >= 0) {
+                            continue;
+                        } else {
+                            message.push(msg2);
+                        }
                     }
-
-                    message.push(msg2);
+    
+                    continue;
                 }
-
-                continue;
+    
+                message.push(msg);
             }
-
-            message.push(msg);
         }
 
         return message.join('\n');
