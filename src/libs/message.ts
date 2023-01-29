@@ -13,7 +13,7 @@ class Message {
     format() {
         const word = ['Response', 'Admin Alert', 'Game', 'Chat'];
         const messages = this.messages;
-        const message = [];
+        const message: string[] = [];
 
         for (const msg of messages) {
             if(msg === '' || word.includes(msg) || Math.abs(parseFloat(msg)) >= 0) {
