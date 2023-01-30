@@ -8,6 +8,25 @@ PRISM is a powerful administration tool. This tool allows admins to keep an eye 
 
 This is a project that aim to make interactice with the PRISM server easier, it is not a official project from the PRISM team, and it is not supported by them. If you have any issues with the tool, please open an issue in the github repo. If you have any issues with the PRISM server, please contact the PRISM team.
 
+## Installation
+
+```bash
+npm install @manh21/prism
+```
+
+## Usage
+
+```ts
+import PRISM from "@manh21/prism";
+
+const prism = new PRISM({
+    host: "127.0.0.1",
+    port: 1234,
+    username: "admin",
+    password: "password",
+});
+```
+
 ## Commands
 
 This command availabel via the `send_raw_command` function.
