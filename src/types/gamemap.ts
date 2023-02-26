@@ -1,6 +1,6 @@
 export interface GameMap {
-    index: string,
-    name: string,
-    mode: string,
-    layer: string,
+  index: string;
+  name: string;
+  mode: string;
+  layer: string;
 }

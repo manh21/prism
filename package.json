@@ -1,15 +1,22 @@
 {
   "name": "@manh21/prism",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "PRISM Connection Library",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "lib/cjs/index.js",
+  "types": "lib/cjs/index.d.ts",
+  "module": "lib/mjs/index.js",
+  "exports": {
+    ".": {
+      "import": "./lib/mjs/index.js",
+      "require": "./lib/cjs/index.js"
+    }
+  },
   "files": [
     "lib/**/*"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\"",
-    "build": "tsc -p .",
+    "build": "rm -fr lib/* && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json && ./fixup.sh",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "lint": "tslint -p tsconfig.json",
     "prepare": "npm run build",
